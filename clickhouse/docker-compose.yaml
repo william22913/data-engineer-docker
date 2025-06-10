@@ -1,0 +1,105 @@
+version: '3.7'
+
+services:
+  # ZooKeeper nodes
+  zk1:
+    image: zookeeper:3.7
+    hostname: zk1
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+    ports:
+      - "2181:2181"
+    volumes:
+      - zk1_data:/data
+      - zk1_datalog:/datalog
+
+  zk2:
+    image: zookeeper:3.7
+    hostname: zk2
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+    volumes:
+      - zk2_data:/data
+      - zk2_datalog:/datalog
+
+  zk3:
+    image: zookeeper:3.7
+    hostname: zk3
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+    volumes:
+      - zk3_data:/data
+      - zk3_datalog:/datalog
+
+  # ClickHouse Shard 1
+  clickhouse1:
+    image: clickhouse/clickhouse-server:latest
+    container_name: ch_shard1
+    hostname: ch1
+    environment:
+      - CLICKHOUSE_USER=wills
+      - CLICKHOUSE_PASSWORD=wills
+    ports:
+      - "9001:9000"
+      - "8123:8123"
+    volumes:
+      - ./configs/ch1/config.xml:/etc/clickhouse-server/config.xml
+      - ./configs/users.xml:/etc/clickhouse-server/users.xml
+      - ch1_data:/var/lib/clickhouse
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+
+  # ClickHouse Shard 2
+  clickhouse2:
+    image: clickhouse/clickhouse-server:latest
+    container_name: ch_shard2
+    hostname: ch2
+    environment:
+      - CLICKHOUSE_USER=wills
+      - CLICKHOUSE_PASSWORD=wills
+    ports:
+      - "9002:9000"
+      - "8124:8123"
+    volumes:
+      - ./configs/ch2/config.xml:/etc/clickhouse-server/config.xml
+      - ./configs/users.xml:/etc/clickhouse-server/users.xml
+      - ch2_data:/var/lib/clickhouse
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+
+  clickhouse-presentation:
+    image: clickhouse/clickhouse-server:latest
+    container_name: ch_presentation
+    hostname: ch-presentation
+    environment:
+      - CLICKHOUSE_USER=wills
+      - CLICKHOUSE_PASSWORD=wills
+    ports:
+      - "9003:9000"
+      - "8125:8123"
+    volumes:
+      - ./configs/ch-presentation/config.xml:/etc/clickhouse-server/config.xml
+      - ./configs/users.xml:/etc/clickhouse-server/users.xml
+      - ch_presentation_data:/var/lib/clickhouse
+    depends_on:
+      - zk1
+      - zk2
+      - zk3
+
+volumes:
+  ch1_data:
+  ch2_data:
+  ch_presentation_data:
+  zk1_data:
+  zk1_datalog:
+  zk2_data:
+  zk2_datalog:
+  zk3_data:
+  zk3_datalog:

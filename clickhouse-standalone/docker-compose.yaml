@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+  # ZooKeeper nodes
+  zk-standalone:
+    image: zookeeper:3.7
+    hostname: zk1
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zk1:2888:3888;2181 server.2=zk2:2888:3888;2181 server.3=zk3:2888:3888;2181
+    ports:
+      - "2181:2181"
+    volumes:
+      - zk_alone_data:/data
+      - zk_alone_datalog:/datalog
+
+  # ClickHouse Shard 1
+  clickhouse-standalone:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse-standalone
+    hostname: ch1
+    environment:
+      - CLICKHOUSE_USER=wills
+      - CLICKHOUSE_PASSWORD=wills
+    ports:
+      - "9001:9000"
+      - "8123:8123"
+    volumes:
+      - ./configs/ch1/config.xml:/etc/clickhouse-server/config.xml
+      - ./configs/users.xml:/etc/clickhouse-server/users.xml
+      - ch_alone_data:/var/lib/clickhouse
+    depends_on:
+      - zk-standalone
+
+volumes:
+  ch_alone_data:
+  zk_alone_data:
+  zk_alone_datalog:
