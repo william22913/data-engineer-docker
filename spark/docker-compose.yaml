@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   spark-master:
-    image: bitnami/spark:latest
+    image: spark-with-user:latest
     container_name: spark-master
     environment:
       - SPARK_MODE=master
@@ -17,21 +17,46 @@ services:
       - spark-net
     volumes:
       - ./jars/clickhouse-jdbc-0.6.0-all.jar:/opt/bitnami/spark/jars/clickhouse-jdbc-0.6.0-all.jar
+      - C:\Users\Pongo\Documents\github\apache-spark-learn\spark-files/files:/opt/bitnami/spark/spark-files/files
+      - C:\Users\Pongo\Documents\github\apache-spark-learn\my_first_apps/main.py:/opt/bitnami/spark/my_first_apps/main.py
 
   spark-worker-1:
-    image: bitnami/spark:latest
+    image: spark-with-user:latest
     container_name: spark-worker-1
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=4              
+      - SPARK_WORKER_MEMORY=4g         
+      - SPARK_USER=spark
     depends_on:
       - spark-master
     ports:
-      - "8081:8081" # Spark Worker 1 UI
+      - "8081:8081" 
     networks:
       - spark-net
     volumes:
       - ./jars/clickhouse-jdbc-0.6.0-all.jar:/opt/bitnami/spark/jars/clickhouse-jdbc-0.6.0-all.jar
+      - C:\Users\Pongo\Documents\github\apache-spark-learn\spark-files/files:/opt/bitnami/spark/spark-files/files
+
+  # Add this new service for running Python scripts
+  pyspark-app:
+    image: spark-with-user:latest
+    container_name: pyspark-app
+    environment:
+      - SPARK_MODE=client
+      - SPARK_DRIVER_HOST=pyspark-app
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    depends_on:
+      - spark-master
+      - spark-worker-1
+    networks:
+      - spark-net
+    volumes:
+      - ./jars/clickhouse-jdbc-0.6.0-all.jar:/opt/bitnami/spark/jars/clickhouse-jdbc-0.6.0-all.jar
+      - C:\Users\Pongo\Documents\github\apache-spark-learn\spark-files/files:/opt/bitnami/spark/spark-files/files
+      - C:\Users\Pongo\Documents\github\apache-spark-learn\my_first_apps/main.py:/opt/bitnami/spark/my_first_apps/main.py
+    command: tail -f /dev/null  # Keep container running
 
 networks:
   spark-net:
